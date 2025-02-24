@@ -6,6 +6,7 @@ from langgraph.graph import StateGraph
 from typing import Optional
 from pydantic import BaseModel
 
+
 # Define the state schema using Pydantic
 class WebsiteProcessingState(BaseModel):
     url: str  # Input URL provided by the user
@@ -73,35 +74,42 @@ class WebsiteIndustryMapperAgent:
     def __init__(self):
         self.graph = StateGraph()
 
-        # Add Nodes (Tools)
+        # Add Nodes
         self.graph.add_node("scrape", scrape_website)
         self.graph.add_node("generate_description", generate_short_description)
         self.graph.add_node("map_to_industry", map_to_industry)
         self.graph.add_node("handle_error", handle_error)
 
-        # Router to decide the next action
+        # Router to dynamically determine next step
         def router(state):
-            return state.get("next_action", "complete")  # Route based on state
+            next_action = state.get("next_action")
+            if next_action == "generate_description":
+                return "generate_description"
+            elif next_action == "map_to_industry":
+                return "map_to_industry"
+            elif next_action == "handle_error":
+                return "handle_error"
+            else:
+                return None  # End workflow
 
         self.graph.add_node("router", router)
-        self.graph.set_entry_point("scrape")  # Start with scraping
+        self.graph.set_entry_point("scrape")
 
-        # Define Edges (Workflow)
+        # Define Workflow Edges
         self.graph.add_edge("scrape", "router")
         self.graph.add_edge("generate_description", "router")
         self.graph.add_edge("map_to_industry", "router")
         self.graph.add_edge("handle_error", "router")
 
-        # Router defines dynamic flow between tasks
-        self.graph.add_conditional_edges("router", {
-            "generate_description": "generate_description",
-            "map_to_industry": "map_to_industry",
-            "handle_error": "handle_error",
-            "complete": None  # End workflow
-        })
-
     def run(self, url):
-        return self.graph.run({"url": url})
+        initial_state = WebsiteProcessingState(url=url)  # Initialize with user input
+        return self.graph.run(initial_state)
+
+
+# Example Usage
+agent = WebsiteIndustryMapperAgent()
+result = agent.run("https://example.com")
+print("Industry Code:", result.industry_code if result.industry_code else "Not mapped")
 
 # Run the agent
 agent = WebsiteIndustryMapperAgent()
