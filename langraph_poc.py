@@ -3,6 +3,18 @@ from bs4 import BeautifulSoup
 import openai
 from langgraph.graph import StateGraph
 
+from typing import Optional
+from pydantic import BaseModel
+
+# Define the state schema using Pydantic
+class WebsiteProcessingState(BaseModel):
+    url: str  # Input URL provided by the user
+    content: Optional[str] = None  # Extracted content from the website
+    short_description: Optional[str] = None  # Generated short description
+    industry_code: Optional[str] = None  # Mapped industry code
+    error: Optional[str] = None  # Error message, if any
+    next_action: Optional[str] = "scrape"  # Next step in the workflow
+
 
 # Step 1: Web Scraping Tool
 def scrape_website(state):
