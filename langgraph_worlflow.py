@@ -101,9 +101,18 @@ class LangGraphWorkflowOnboarding:
             {"error": "error_handler_tool", "short_description_tool": "short_description_tool"},
         )
         onboarding_workflow.add_conditional_edges(
-            "short_description_tool", lambda state: "error" if state.get("error") else "parallel_processing",
-            {"error": "error_handler_tool", "parallel_processing": ["industry_mapping_tool", "offline_info_tool"]},
+            "short_description_tool",
+            lambda state: "error" if state.get("error") else "parallel_processing",
+            {"error": "error_handler_tool", "parallel_processing": "parallel_tools"}
         )
+
+        onboarding_workflow.add_node("parallel_tools", lambda state: tuple(state["next_action"]))
+
+        onboarding_workflow.add_parallel_edges(
+            "parallel_tools",
+            ["industry_mapping_tool", "offline_info_tool"]
+        )
+
         onboarding_workflow.add_edge("industry_mapping_tool", "respond")
         onboarding_workflow.add_edge("offline_info_tool", "respond")
         onboarding_workflow.add_edge("respond", END)
